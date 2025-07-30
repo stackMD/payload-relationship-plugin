@@ -37,9 +37,9 @@ Suppose you have a `Product` collection and a `Variants` collection. With this p
 ## Installation
 
 ```bash
-yarn add your-plugin-package-name
+yarn add @stackmd/payload-relationship-plugin
 # or
-npm install your-plugin-package-name
+npm install @stackmd/payload-relationship-plugin
 ```
 
 ---
