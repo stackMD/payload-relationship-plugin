@@ -171,7 +171,7 @@ This plugin supports three modes for handling create, update, and delete operati
 }
 
 import { RequestContext as OriginalRequestContext } from 'payload'
-import type { RelationPluginContext } from "@stackMD/payload-relationship-plugin"
+import type { RelationPluginContext } from "@stackmd/payload-relationship-plugin"
 
 declare module 'payload' {
   // Create a new interface that merges your additional fields with the original one

@@ -1,5 +1,5 @@
 {
-  "name": "@stackMD/payload-relationship-plugin",
+  "name": "@stackmd/payload-relationship-plugin",
   "version": "1.0.0",
   "description": "create a relationship data inside another collection",
   "license": "MIT",
@@ -111,7 +111,7 @@
   },
   "registry": "https://registry.npmjs.org/",
   "dependencies": {
-    "@stackMD/payload-relationship-plugin": "link:",
+    "@stackmd/payload-relationship-plugin": "link:",
     "es-toolkit": "^1.39.5"
   }
 }

@@ -20,7 +20,7 @@
       "": ["../src/index.ts"],
       "/client": ["../src/exports/client.ts"],
       "/rsc": ["../src/exports/rsc.ts"],
-      "@stackMD/payload-relationship-plugin/client": ["../src/exports/client.ts"],
+      "@stackmd/payload-relationship-plugin/client": ["../src/exports/client.ts"],
       "@/*": ["./*"]
     },
     "noEmit": true,

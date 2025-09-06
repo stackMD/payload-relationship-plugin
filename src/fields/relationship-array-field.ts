@@ -86,7 +86,7 @@ export const RelationshipArrayField: CustomRelationshipType = (
         allowEdit: false,
         hidden: hideDefaultField ? true : false,
         components: {
-          Description: '@stackMD/payload-relationship-plugin/client#RelationshipDescription',
+          Description: '@stackmd/payload-relationship-plugin/client#RelationshipDescription',
         },
       },
       hooks: { afterChange: [] },
