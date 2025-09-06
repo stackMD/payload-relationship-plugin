@@ -37,9 +37,9 @@ Suppose you have a `Product` collection and a `Variants` collection. With this p
 ## Installation
 
 ```bash
-yarn add your-plugin-package-name
+yarn add @stackmd/payload-relationship-plugin
 # or
-npm install your-plugin-package-name
+npm install @stackmd/payload-relationship-plugin
 ```
 
 ---
@@ -184,7 +184,7 @@ declare module 'payload' {
 
 ### 2. Direct DB Adapter Mode (`usePayloadHooks: false`)
 - The plugin bypasses Payload's hooks and uses the database adapter directly for CRUD operations.
-- This mode is faster and avoids triggering hooks, but does not run field/collection hooks, access control, or side effects.
+- This mode is faster and avoids triggering hooks, but does not run field/collection hooks, access control, drafts or side effects.
 - Use this mode for maximum performance when you do not need Payload's full hook system.
 
 ### 3. Drizzle Table Mode (Beta)
