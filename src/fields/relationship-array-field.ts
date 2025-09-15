@@ -1,26 +1,21 @@
-import {
-  Field,
-  RelationshipField,
-  deepMerge,
-  ArrayField,
-  FieldHook,
-  CollectionAfterChangeHook,
-  PayloadRequest,
-} from 'payload'
+import type { ArrayField, Field, FieldHook, RelationshipField } from 'payload'
+import type { HookArgs } from 'src/hooks/without-payload-hooks.js'
+import type { RelationshipPluginConfig } from 'src/index.js'
+import type { RelationPluginContext } from 'src/types.js'
+
+import { CollectionAfterChangeHook, deepMerge, PayloadRequest } from 'payload'
+
+import type {
+  NormalRelationConfig,
+  RelationshipWithCurrentCollection,
+} from './unified-relationship.js'
 
 import {
   DynamicData,
   extractNamedFieldsWithFunction,
   generateDynamicExclusionFunction,
 } from '..//utils/utils.js'
-import {
-  NormalRelationConfig,
-  RelationShipConfig,
-  RelationshipWithCurrentCollection,
-} from './unified-relationship.js'
-import { RelationshipPluginConfig } from 'src/index.js'
-import { HookArgs } from 'src/hooks/without-payload-hooks.js'
-import { RelationPluginContext } from 'src/types.js'
+import { RelationShipConfig } from './unified-relationship.js'
 
 type CustomRelationshipType = (
   /**
@@ -41,13 +36,13 @@ export const RelationshipArrayField: CustomRelationshipType = (
   pluginConfig,
 ) => {
   // TODO: added a check if relationTo is string, i will not support it right now
-  const { relationTo, name, hasMany = false, currentCollection, type } = relationshipField
+  const { name, type, currentCollection, hasMany = false, relationTo } = relationshipField
   const {
-    fieldsToRender = [],
-    fieldsToExclude,
     addDefaultField = true,
-    hideDefaultField = true,
     customArrayOverrides,
+    fieldsToExclude,
+    fieldsToRender = [],
+    hideDefaultField = true,
     reverseRelationField,
   } = relatedToFieldConfig
 
@@ -84,10 +79,10 @@ export const RelationshipArrayField: CustomRelationshipType = (
       admin: {
         allowCreate: false,
         allowEdit: false,
-        hidden: hideDefaultField ? true : false,
         components: {
           Description: '@stackmd/payload-relationship-plugin/client#RelationshipDescription',
         },
+        hidden: hideDefaultField ? true : false,
       },
       hooks: { afterChange: [] },
     },
@@ -96,8 +91,6 @@ export const RelationshipArrayField: CustomRelationshipType = (
   const ArrayFieldpMergedField = deepMerge<Omit<ArrayField, 'type'>, ArrayField>(
     {
       name: arrayName,
-      label: `Relationship ${name}`,
-      virtual: true,
       hooks: {
         afterRead: [
           // i use the afterField hook becuase in the prevoiusDoc the field is not poulated in the afterChangeCollectionHook, if i use the collection afterREadHook,
@@ -108,13 +101,15 @@ export const RelationshipArrayField: CustomRelationshipType = (
                 relationshipField,
                 reverseRelationName: reverseRelationField?.name || '',
               })
-            : async ({ req, operation, data, findMany, context, originalDoc }) => {
+            : async ({ context, data, findMany, operation, originalDoc, req }) => {
                 if (context.RelationUpdateFinished) {
                   return
                 }
                 // If we don't use findMany, there is infinite loop
                 if (operation === 'read' && !findMany) {
-                  if (!data) return
+                  if (!data) {
+                    return
+                  }
                   // Imp: this is using the _rels table to populate the array
                   const relations = data[name]
                   const populatedRelations = []
@@ -126,12 +121,12 @@ export const RelationshipArrayField: CustomRelationshipType = (
                     try {
                       const result = await req.payload.find({
                         collection: relationTo as string,
+                        req,
                         where: {
                           id: {
                             equals: relationId,
                           },
                         },
-                        req,
                       })
                       if (result?.docs?.[0]) {
                         populatedRelations.push(result.docs[0])
@@ -146,6 +141,8 @@ export const RelationshipArrayField: CustomRelationshipType = (
               },
         ],
       },
+      label: `Relationship ${name}`,
+      virtual: true,
     },
     {
       ...customArrayOverrides,
@@ -161,7 +158,7 @@ export const RelationshipArrayField: CustomRelationshipType = (
 }
 
 const afterReadFieldHook = (args: HookArgs): FieldHook<any, any, any> => {
-  return async ({ req, context, findMany, data }) => {
+  return async ({ context, data, findMany, req }) => {
     if (
       (context.relationPlugin as RelationPluginContext)?.updateFinished ||
       (context.relationPlugin as RelationPluginContext)?.createFinished ||
@@ -170,7 +167,9 @@ const afterReadFieldHook = (args: HookArgs): FieldHook<any, any, any> => {
       return
     }
     if (!findMany) {
-      if (!data) return
+      if (!data) {
+        return
+      }
       const collectionToFind =
         typeof args.relationshipField.relationTo === 'string'
           ? args.relationshipField.relationTo
@@ -178,8 +177,8 @@ const afterReadFieldHook = (args: HookArgs): FieldHook<any, any, any> => {
 
       const result: any = await req.payload.db.find({
         collection: collectionToFind,
-        where: { [args.reverseRelationName]: { equals: data.id } },
         sort: 'order',
+        where: { [args.reverseRelationName]: { equals: data.id } },
       })
 
       data[args.arrayName] = result.docs
@@ -187,7 +186,9 @@ const afterReadFieldHook = (args: HookArgs): FieldHook<any, any, any> => {
     }
 
     if (findMany) {
-      if (!data) return
+      if (!data) {
+        return
+      }
       const collectionToFind =
         typeof args.relationshipField.relationTo === 'string'
           ? args.relationshipField.relationTo
@@ -195,8 +196,8 @@ const afterReadFieldHook = (args: HookArgs): FieldHook<any, any, any> => {
 
       const result: any = await req.payload.db.find({
         collection: collectionToFind,
-        where: { [args.reverseRelationName]: { equals: data.id } },
         sort: 'order',
+        where: { [args.reverseRelationName]: { equals: data.id } },
       })
 
       data[args.arrayName] = result.docs

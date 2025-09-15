@@ -1,23 +1,25 @@
-import {
+import type {
   CollectionAfterChangeHook,
   CollectionAfterReadHook,
   CollectionBeforeChangeHook,
 } from 'payload'
-import {
+
+import type {
   RelationShipConfig,
   RelationshipWithCurrentCollection,
 } from '../fields/unified-relationship.js'
+import type { RelationPluginContext } from '../types.js'
+
 import { handleRelationCreate } from '../operations/create.js'
 import { handleRelationUpdate } from '../operations/update.js'
-import { RelationPluginContext } from '../types.js'
 
 export function setupWithPayloadHooks(
   relationshipField: RelationshipWithCurrentCollection,
   relatedToFieldConfig: RelationShipConfig,
   // currentCollectionNameInRelationTo: string,
 ) {
-  const { relationTo, name, currentCollection } = relationshipField
-  const { reverseRelationField, addDefaultField, customArrayOverrides } = relatedToFieldConfig
+  const { name, currentCollection, relationTo } = relationshipField
+  const { addDefaultField, customArrayOverrides, reverseRelationField } = relatedToFieldConfig
   const arrayName =
     !addDefaultField && !customArrayOverrides?.name
       ? name
@@ -77,7 +79,7 @@ export function setupWithPayloadHooks(
       // },
     ] as CollectionAfterReadHook[],
     beforeChange: [
-      async ({ operation, context, data }) => {
+      ({ context, data, operation }) => {
         if (
           (context.relationPlugin as RelationPluginContext)?.updateFinished ||
           (context.relationPlugin as RelationPluginContext)?.createFinished ||
@@ -88,22 +90,22 @@ export function setupWithPayloadHooks(
 
           context.relationPlugin = {
             createFinished: relationPlugin?.createFinished,
-            updateFinished: relationPlugin?.updateFinished,
             isRelsUpdate: relationPlugin?.isRelsUpdate,
             skipCreate: relationPlugin?.skipCreate,
+            updateFinished: relationPlugin?.updateFinished,
           }
           return
         }
 
         if (operation === 'create') {
           context.relationPlugin = {
-            isRelationCreate: true,
             [arrayName]: data?.[arrayName],
+            isRelationCreate: true,
           }
         } else if (operation === 'update') {
           context.relationPlugin = {
-            isRelationUpdate: true,
             [arrayName]: data?.[arrayName],
+            isRelationUpdate: true,
           }
         }
       },
@@ -114,52 +116,64 @@ export function setupWithPayloadHooks(
     // hopefully the slug will not change so this could be the best approach
 
     afterChange: [
-      async ({ req, operation, context, doc, previousDoc }) => {
+      async ({ context, doc, operation, previousDoc, req }) => {
         const relationContext = (context.relationPlugin as RelationPluginContext) || undefined
         if (operation === 'create' && relationContext.isRelationCreate) {
           const {
+            createFinished,
             isRelationCreate,
             isRelationUpdate,
-            createFinished,
-            updateFinished,
             isRelsUpdate,
+            updateFinished,
             ...rest
           } = context.relationPlugin as RelationPluginContext
 
-          if (isRelationUpdate) return
-          if (!doc) return
-          if (!isRelationCreate) return
-          if (isRelsUpdate) return
-          if (createFinished) return
-          if (!rest[arrayName]) return
+          if (isRelationUpdate) {
+            return
+          }
+          if (!doc) {
+            return
+          }
+          if (!isRelationCreate) {
+            return
+          }
+          if (isRelsUpdate) {
+            return
+          }
+          if (createFinished) {
+            return
+          }
+          if (!rest[arrayName]) {
+            return
+          }
           // Local Api create method
           const addedNewRelations = await handleRelationCreate({
-            context,
-            doc,
-            req,
-            arrayName,
-            relationTo: relationTo as string,
-            currentCollection,
             name,
+            arrayName,
+            context,
+            currentCollection,
             currentCollectionNameInRelationTo,
+            doc,
+            relationTo: relationTo as string,
+            req,
           })
 
           if (addDefaultField) {
             try {
               // Update the original collection with the new relations IDs
               const result = await req.payload.update({
-                collection: currentCollection,
                 id: doc.id,
-                data: {
-                  [name]: addedNewRelations.map((relation) => relation.id),
-                },
-                req,
+                collection: currentCollection,
                 context: {
                   ...context,
                   relationPlugin: {
                     isRelsUpdate: true,
                   },
                 },
+                data: {
+                  [name]: addedNewRelations.map((relation) => relation.id),
+                },
+                req,
               })
               context.relationPlugin = {
                 createFinished: true,
@@ -176,17 +190,25 @@ export function setupWithPayloadHooks(
             }
           }
 
+          context.relationPlugin = {
+            createFinished: true,
+          }
+          // this context work, the before was not???
+          req.context.relationPlugin = {
+            createFinished: true,
+          }
+
           return { ...doc, [arrayName]: addedNewRelations }
 
           // Update operation
         } else if (operation === 'update' && relationContext.isRelationUpdate) {
           const {
+            createFinished,
             isRelationCreate,
             isRelationUpdate,
-            createFinished,
-            updateFinished,
-            skipCreate,
             isRelsUpdate,
+            skipCreate,
+            updateFinished,
             ...rest
           } = context.relationPlugin as RelationPluginContext
           // if (context.updateFinished) {
@@ -195,20 +217,28 @@ export function setupWithPayloadHooks(
           //   delete context.relationPlugin.isRelationUpdate
           //   return
           // }
-          if (isRelationCreate || createFinished) return
-          if (isRelsUpdate) return
-          if (!rest[arrayName]) return
-          if (skipCreate) return
+          if (isRelationCreate || createFinished) {
+            return
+          }
+          if (isRelsUpdate) {
+            return
+          }
+          if (!rest[arrayName]) {
+            return
+          }
+          if (skipCreate) {
+            return
+          }
           const updatedRelatedDoc = await handleRelationUpdate({
+            name,
+            arrayName,
             context,
+            currentCollection,
+            currentCollectionNameInRelationTo,
             doc,
             previousDoc,
-            req,
-            arrayName,
             relationTo: relationTo as string,
-            currentCollection,
-            name,
-            currentCollectionNameInRelationTo,
+            req,
           })
 
           if (addDefaultField) {
@@ -217,17 +247,17 @@ export function setupWithPayloadHooks(
               // Update the original collection with the new relations IDs
               const currentCollectionUpdate = await req.payload.update({
                 collection: currentCollection,
-                where: { id: { equals: doc.id } },
+                context: {
+                  ...context,
+                  relationPlugin: { isRelsUpdate: true },
+                },
                 data: {
                   [name]: updatedRelatedDoc?.map((relation) =>
                     typeof relation.id === 'string' ? relation.id : parseInt(relation.id),
                   ),
                 },
                 req,
-                context: {
-                  ...context,
-                  relationPlugin: { isRelsUpdate: true },
-                },
+                where: { id: { equals: doc.id } },
               })
 
               context.relationPlugin = {
@@ -242,6 +272,14 @@ export function setupWithPayloadHooks(
             } catch (err) {
               console.error(`Error updating original ${currentCollection}:`, err)
             }
+          }
+
+          context.relationPlugin = {
+            updateFinished: true,
+          }
+          // this context work, the before was not???
+          req.context.relationPlugin = {
+            updateFinished: true,
           }
 
           return { ...doc, [arrayName]: updatedRelatedDoc }
