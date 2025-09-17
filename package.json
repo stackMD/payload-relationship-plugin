@@ -1,6 +1,6 @@
 {
   "name": "@stackmd/payload-collection-to-array",
-  "version": "1.0.3",
+  "version": "1.0.0",
   "description": "create a relationship data inside another collection",
   "license": "MIT",
   "type": "module",
