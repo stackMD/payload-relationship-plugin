@@ -1,6 +1,6 @@
 {
   "name": "@stackmd/payload-relationship-plugin",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "create a relationship data inside another collection",
   "license": "MIT",
   "type": "module",

@@ -1,38 +1,40 @@
+import type { RelationshipPluginConfig } from 'src/index.js'
+
 import {
+  type ArrayField,
+  type CollectionSlug,
+  deepMerge,
   type Field,
   type RelationshipField,
-  type CollectionSlug,
-  type ArrayField,
-  deepMerge,
 } from 'payload'
+
 import { RelationshipArrayField } from './relationship-array-field.js'
-import { RelationshipPluginConfig } from 'src/index.js'
 
 export type DotNotationWithSlug<T extends string = CollectionSlug> = `${T}.${string}`
 
 type BaseConfig = {
-  fieldsToRender?: Field[] // List of fields to render
-  fieldsToExclude?: Partial<Field>[] | undefined
   addDefaultField?: boolean
-  hideDefaultField?: boolean
   addToRels?: boolean
-  customArrayOverrides?: Partial<Omit<ArrayField, 'type' | 'fields'>>
+  customArrayOverrides?: Partial<Omit<ArrayField, 'fields' | 'type'>>
+  fieldsToExclude?: Partial<Field>[] | undefined
+  fieldsToRender?: Field[] // List of fields to render
+  hideDefaultField?: boolean
 }
 
-export type NormalRelationConfig = BaseConfig & {
+export type NormalRelationConfig = {
   // drizzleSchemas?: { collectionRelSchema: PgTable; relationSchema: PgTable }
   reverseRelationField?: RelationshipWithCurrentCollection
-}
+} & BaseConfig
 
-export type NestedRelationConfig = BaseConfig & {
+export type NestedRelationConfig = {
   drizzleTable?: string
-}
+} & BaseConfig
 
 export type RelationShipConfig = NormalRelationConfig
 
-export type RelationshipWithCurrentCollection = RelationshipField & {
+export type RelationshipWithCurrentCollection = {
   currentCollection: CollectionSlug
-}
+} & RelationshipField
 
 export type UnifiedRelationshipFactory = (
   relationshipField: RelationshipWithCurrentCollection,
@@ -50,34 +52,16 @@ export const RenderUnifiedRelationship: UnifiedRelationshipFactory = (
   return Array.isArray(result) ? result : [result] // ensure Field[]
 }
 
-type RelationPluginField = {
-  create?: boolean
-
-  /**
-   * If true, adds a numeric 'order' field to the relatedTocollection
-   * to support ordering in relationships.
-   */
-  ordered?: boolean
-  config: Omit<BaseConfig, 'fieldsToRender' | 'reverseRelationField' | 'addToRels'>
+type PopulateArrayField = {
+  fieldsToExclude?: Partial<Field>[] | undefined
+  fieldsToRender?: Field[] // List of fields to render
+  populateFrom: CollectionSlug
 }
 
-type ReturnedRelationPluginField = {
-  relationPlugin: RelationPluginField
-}
-
-export const createRelationPluginField = (
-  userConfig: RelationPluginField,
-): ReturnedRelationPluginField => {
-  const defaults: ReturnedRelationPluginField = {
-    relationPlugin: {
-      create: true, // Default enabled
-      config: {
-        addDefaultField: false, // Default config
-      },
-    },
+export const populateFieldFromCollection = (userConfig: PopulateArrayField) => {
+  return {
+    fieldsToExclude: userConfig.fieldsToExclude ?? [],
+    fieldsToRender: userConfig.fieldsToRender ?? [],
+    populateFrom: userConfig.populateFrom,
   }
-
-  return deepMerge(defaults, {
-    relationPlugin: userConfig,
-  })
 }

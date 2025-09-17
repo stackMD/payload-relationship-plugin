@@ -1,22 +1,21 @@
-import { CollectionConfig } from 'payload'
-import { createRelationPluginField } from '../../../src/fields/unified-relationship.js'
+import type { CollectionConfig } from 'payload'
 
 const Sales: CollectionConfig = {
   slug: 'sales',
-  admin: {
-    useAsTitle: 'customerName',
-    defaultColumns: ['customerName', 'total', 'date'],
-    group: 'Sales',
-  },
   access: {
     read: () => true,
+  },
+  admin: {
+    defaultColumns: ['customerName', 'total', 'date'],
+    group: 'Sales',
+    useAsTitle: 'customerName',
   },
   fields: [
     {
       name: 'customerName',
       type: 'text',
-      required: true,
       label: 'Customer Name',
+      required: true,
     },
     {
       name: 'email',
@@ -37,21 +36,21 @@ const Sales: CollectionConfig = {
       name: 'salesItems',
       type: 'relationship',
       relationTo: 'salesItems',
-      hasMany: true,
-      custom: {
-        ...createRelationPluginField({
-          create: true,
-          config: {
-            // fieldsToExclude: [{ name: 'stock', type: 'number' }],
-            addDefaultField: true,
-            hideDefaultField: false,
-            customArrayOverrides: {
-              name: 'salesItemsArray',
-              label: 'Sale Item',
-            },
-          },
-        }),
-      },
+      // hasMany: true,
+      // custom: {
+      //   ...createRelationPluginField({
+      //     create: true,
+      //     config: {
+      //       // fieldsToExclude: [{ name: 'stock', type: 'number' }],
+      //       addDefaultField: true,
+      //       hideDefaultField: false,
+      //       customArrayOverrides: {
+      //         name: 'salesItemsArray',
+      //         label: 'Sale Item',
+      //       },
+      //     },
+      //   }),
+      // },
     },
 
     {
@@ -214,7 +213,7 @@ const Sales: CollectionConfig = {
 
   hooks: {
     afterChange: [
-      async ({ context, operation }) => {
+      ({ context, operation }) => {
         console.log('inside sale operation', operation)
         console.log('inside sale context', context)
       },

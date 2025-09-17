@@ -1,7 +1,8 @@
-import { dirname, resolve } from 'path'
-import fs from 'fs'
-import { Field } from 'payload'
+import type { Field } from 'payload'
+
 import { isEqual } from 'es-toolkit'
+import fs from 'fs'
+import { dirname, resolve } from 'path'
 
 // Function to find the root directory of the user's project
 export function findProjectRootFromPlugin() {
@@ -29,58 +30,14 @@ export function findProjectRootFromPlugin() {
 /**
  * Type guard to check if a field has a 'name' property.
  */
-function isNamedField(field: Field): field is Field & { name: string } {
+function isNamedField(field: Field): field is { name: string } & Field {
   return 'name' in field && typeof field.name === 'string'
 }
 
 type ExtractOptions = {
-  exclude?: (field: Field & { name: string }) => boolean
+  exclude?: (field: { name: string } & Field) => boolean
   preserveLayout?: boolean
 }
-/**
- * Recursively extract all fields that have a `name` from a Payload field config.
- * This includes fields inside arrays, groups, collapsibles, rows, blocks, etc.
- */
-// export function extractNamedFieldsWithFunction(
-//   fields: Field[],
-//   exclude?: (field: Field & { name: string }) => boolean,
-// ): (Field & { name: string })[] {
-//   const result: (Field & { name: string })[] = []
-
-//   for (const field of fields) {
-//     if (!isNamedField(field)) continue
-
-//     // Clone field to avoid mutating original
-//     const clonedField = { ...field }
-
-//     // Recursively handle nested `fields`
-//     if ('fields' in clonedField && Array.isArray(clonedField.fields)) {
-//       clonedField.fields = extractNamedFieldsWithFunction(clonedField.fields, exclude)
-//     }
-
-//     // Recursively handle blocks
-//     if (clonedField.type === 'blocks' && Array.isArray(clonedField.blocks)) {
-//       clonedField.blocks = clonedField.blocks.map((block) => ({
-//         ...block,
-//         fields: extractNamedFieldsWithFunction(block.fields, exclude),
-//       }))
-//     }
-
-//     // 📑 Handle tabs
-//     if (clonedField.type === 'tabs' && Array.isArray(clonedField.tabs)) {
-//       for (const tab of clonedField.tabs) {
-//         result.push(...extractNamedFieldsWithFunction(tab.fields, exclude))
-//       }
-//     }
-
-//     // Apply exclusion rule only to top-level named field
-//     if (!exclude || !exclude(clonedField)) {
-//       result.push(clonedField)
-//     }
-//   }
-
-//   return result
-// }
 
 export function extractNamedFieldsWithFunction(
   fields: Field[],
@@ -142,7 +99,9 @@ type ExclusionOptions = {
 }
 
 function isAllowedException(field: Field, exceptions?: Partial<Field>[]): boolean {
-  if (!exceptions) return false
+  if (!exceptions) {
+    return false
+  }
 
   return exceptions.some((rule) => {
     return Object.entries(rule).every(([key, value]) => {
@@ -155,7 +114,7 @@ function isAllowedException(field: Field, exceptions?: Partial<Field>[]): boolea
   })
 }
 
-function hasRequired(field: Field): field is Field & { required?: boolean } {
+function hasRequired(field: Field): field is { required?: boolean } & Field {
   return 'required' in field
 }
 
@@ -174,13 +133,6 @@ export function generateDynamicExclusionFunction(
     const isException = isAllowedException(field, options?.allowRequiredExceptions)
 
     if (shouldExclude || isException) {
-      if (hasRequired(field) && field.required === true && !isException) {
-        console.warn(
-          `\x1b[33m[DEBUG]Relationship Plugin: Cannot exclude required field "${(field as any).name}".\x1b[0m`,
-        )
-        return false
-      }
-
       return true
     }
 
@@ -193,13 +145,13 @@ type ExcludeEntry = { name: string; type?: string }
 export function extractNamedFieldsWithList(
   fields: Field[],
   excludeList: ExcludeEntry[] = [],
-): (Field & { name: string })[] {
-  const shouldExclude = (field: Field & { name: string }) =>
+): ({ name: string } & Field)[] {
+  const shouldExclude = (field: { name: string } & Field) =>
     excludeList.some(
       (entry) => entry.name === field.name && (!entry.type || entry.type === field.type),
     )
 
-  const result: (Field & { name: string })[] = []
+  const result: ({ name: string } & Field)[] = []
 
   for (const field of fields) {
     if (isNamedField(field) && !shouldExclude(field)) {
@@ -253,7 +205,9 @@ export function getMatchingFieldsWithNestedArraySupport(
   const result = new Set<string>()
 
   fieldsToRender.forEach((field) => {
-    if (!('name' in field) || typeof field.name !== 'string') return
+    if (!('name' in field) || typeof field.name !== 'string') {
+      return
+    }
 
     const fieldName = field.name
 
@@ -287,8 +241,8 @@ export function getMatchingFieldsWithNestedArraySupport(
 }
 
 export type DynamicData = {
-  id?: string | number
   [key: string]: unknown
+  id?: number | string
 }
 
 export function cleanIdsFromData(
@@ -302,7 +256,9 @@ export function cleanIdsFromData(
     const id = item.id
     const isValid = id && originalIds.has(String(id))
 
-    if (isValid) return item
+    if (isValid) {
+      return item
+    }
 
     const { id: _, ...rest } = item
     return rest
@@ -319,8 +275,8 @@ export function cleanIdsFromData(
  */
 export type ReturnedRecordsToProcess = {
   toCreate: DynamicData[]
-  toUpdate: DynamicData[]
   toDelete: DynamicData[]
+  toUpdate: DynamicData[]
   unchanged: DynamicData[]
 }
 export function getRecordsToProcess(
@@ -379,7 +335,7 @@ export function getRecordsToProcess(
   })
 
   // Return all created, updated, deleted, and unchanged records
-  return { toCreate, toUpdate, toDelete, unchanged }
+  return { toCreate, toDelete, toUpdate, unchanged }
 }
 
 /**

@@ -5,17 +5,16 @@ import { buildConfig } from 'payload'
 import sharp from 'sharp'
 import { fileURLToPath } from 'url'
 
-import { devUser } from './helpers/credentials.js'
-import { testEmailAdapter } from './helpers/testEmailAdapter.js'
-import { seed } from './seed.js'
-import { RelationshipPlugin } from '../src/index.js'
-import { Variants } from './collections/varinat-collection.js'
+import { PopulateArrayFromCollection } from '../src/index.js'
+import { Editions } from './collections/book/editions/index.js'
+import { Book } from './collections/book/index.js'
 import { Product } from './collections/product-collection.js'
 import Sales from './collections/Sales/index.js'
 import SalesItems from './collections/Sales/SalesItems/index.js'
-
-import { Book } from './collections/book/index.js'
-import { Editions } from './collections/book/editions/index.js'
+import { Variants } from './collections/varinat-collection.js'
+import { devUser } from './helpers/credentials.js'
+import { testEmailAdapter } from './helpers/testEmailAdapter.js'
+import { seed } from './seed.js'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -47,23 +46,9 @@ export default buildConfig({
     await seed(payload)
   },
   plugins: [
-    RelationshipPlugin({
-      usePayloadHooks: true,
+    PopulateArrayFromCollection({
       collections: {
-        product: {
-          // drizzleTable: product,
-          relationships: [
-            // {
-            //   fieldName: 'variants',
-            //   drizzleTable: products_variants,
-            //   arrayTables: [{ name: 'options', drizzleTable: products_variants_options }],
-            // },
-          ],
-        },
-        sales: {
-          relationships: [{ fieldName: 'salesItem' }],
-        },
-        book: { relationships: [{ fieldName: '' }] },
+        product: { arrayFieldNames: ['variants'] },
       },
     }),
   ],
@@ -71,6 +56,5 @@ export default buildConfig({
   sharp,
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
-    autoGenerate: false,
   },
 })

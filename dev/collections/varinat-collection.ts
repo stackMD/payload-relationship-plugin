@@ -1,5 +1,6 @@
+import type { CollectionConfig } from 'payload'
+
 import { randomUUID } from 'crypto'
-import { CollectionConfig } from 'payload'
 
 export const Variants: CollectionConfig = {
   slug: 'productsVariants',
@@ -22,10 +23,10 @@ export const Variants: CollectionConfig = {
       admin: {
         disabled: true,
       },
-      label: 'Variant ID',
       defaultValue: () => {
         return randomUUID()
       },
+      label: 'Variant ID',
     },
     {
       name: 'title',
@@ -44,11 +45,11 @@ export const Variants: CollectionConfig = {
     {
       name: 'product',
       type: 'relationship',
-      relationTo: 'product',
-      required: true,
       admin: {
         position: 'sidebar',
       },
+      relationTo: 'product',
+      required: true,
     },
     {
       name: 'options',
@@ -80,7 +81,7 @@ export const Variants: CollectionConfig = {
   ] as const,
   hooks: {
     afterChange: [
-      async ({ operation, collection, context }) => {
+      async ({ collection, context, operation }) => {
         console.log('operation', operation, 'inside', collection.slug)
         console.log('context inside', collection.slug, context)
       },

@@ -1,6 +1,6 @@
-import { CollectionConfig } from 'payload'
-import { createRelationPluginField } from '../../src/fields/unified-relationship.js'
-import { Variants } from './varinat-collection.js'
+import type { CollectionConfig } from 'payload'
+
+import { populateFieldFromCollection } from '../../src/fields/unified-relationship.js'
 
 export const Product: CollectionConfig = {
   slug: 'product',
@@ -41,23 +41,13 @@ export const Product: CollectionConfig = {
     },
     {
       name: 'variants',
-      type: 'relationship',
-      relationTo: 'productsVariants',
-      hasMany: true,
-      custom: {
-        ...createRelationPluginField({
-          create: true,
-          // ordered: true,
-          config: {
-            addDefaultField: true,
-            hideDefaultField: false,
-            fieldsToExclude: [],
-            customArrayOverrides: {
-              // name: 'variantsArray',
-            },
-          },
-        }),
-      },
+      type: 'array',
+      custom: populateFieldFromCollection({
+        fieldsToExclude: [{ name: 'product' }],
+        populateFrom: 'productsVariants',
+      }),
+      fields: [],
+      virtual: true,
     },
     // {
     //   name: 'custom',
@@ -106,17 +96,4 @@ export const Product: CollectionConfig = {
     //   },
     // ),
   ],
-  hooks: {
-    afterChange: [
-      async ({ req, operation, context, doc, collection }) => {
-        console.log('operation', operation, 'inside', collection.slug)
-        console.log('context', context)
-
-        if (operation === 'create') {
-          // console.log('create operation')
-          // console.log('create inside collection', doc)
-        }
-      },
-    ],
-  },
 }

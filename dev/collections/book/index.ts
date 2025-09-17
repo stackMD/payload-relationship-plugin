@@ -1,5 +1,4 @@
-import { CollectionConfig } from 'payload'
-import { createRelationPluginField } from '../../../src/fields/unified-relationship.js'
+import type { CollectionConfig } from 'payload'
 
 export const Book: CollectionConfig = {
   slug: 'book',
@@ -11,23 +10,13 @@ export const Book: CollectionConfig = {
     {
       name: 'editions',
       type: 'relationship',
-      relationTo: 'editions',
       hasMany: true,
-      custom: {
-        ...createRelationPluginField({
-          create: true,
-          config: {
-            addDefaultField: false,
-            hideDefaultField: false,
-            // You can add fieldsToExclude or customArrayOverrides if needed
-          },
-        }),
-      },
+      relationTo: 'editions',
     },
   ],
   hooks: {
     beforeChange: [
-      async ({ data, collection }) => {
+      ({ collection, data }) => {
         console.log('data inside', collection.slug, data)
       },
     ],
