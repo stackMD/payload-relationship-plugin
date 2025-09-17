@@ -1,5 +1,5 @@
 {
-  "name": "@stackmd/payload-relationship-plugin",
+  "name": "@stackmd/payload-collection-to-array",
   "version": "1.0.3",
   "description": "create a relationship data inside another collection",
   "license": "MIT",
